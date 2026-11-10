@@ -84,7 +84,7 @@ function renderHome(){
   <div class="choice"><h2>Participant</h2><p>Enter your study code, complete a short background form once, then continue to your next session.</p><button class="primary" onclick="subjectLogin()">Continue as participant</button></div>
   <div class="choice"><h2>Researcher / Operator</h2><p>Create study codes, assign conditions, monitor completion, and export pilot data.</p><button class="secondary" onclick="operatorLogin()">Open researcher dashboard</button></div>
  </div>
- <div class="notice small"><strong>For pilot testing:</strong> responses are stored in the cloud. Participants need their private code and PIN; internet is required.</div>`;
+ <div class="notice small"><strong>For pilot testing:</strong> responses are stored in the cloud. Participants need their student code; internet is required.</div>`;
 }
 async function operatorLogin(){
  const password=prompt('Researcher password:');if(password===null)return;
