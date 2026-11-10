@@ -1,177 +1,467 @@
-<
-const express=require('express');
-const {Pool}=require('pg');
-const crypto=require('crypto');
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI, Problem Solving & Persistence Study — Enhanced Pilot</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--text:#202431;--muted:#6b7385;--line:#dfe3ec;--primary:#586be8;--soft:#f1f3ff;--danger:#b42318;--ok:#137a4c;--warn:#9a6700}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.shell{width:min(1120px,calc(100% - 28px));margin:30px auto}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 10px 30px rgba(31,36,48,.05)}
+h1{font-size:30px;margin:6px 0 10px}h2{font-size:23px}h3{margin-bottom:7px}p,li{line-height:1.5}.muted{color:var(--muted)}.small{font-size:13px}
+.row{display:flex;align-items:center}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.gap{gap:10px}
+.pill{display:inline-block;background:#eef1f6;border-radius:999px;padding:6px 10px;color:var(--muted);font-size:13px}
+.notice{padding:14px 16px;border-left:4px solid var(--primary);background:#f7f8ff;border-radius:6px;margin:16px 0}
+.warn{border-left-color:#d4a000;background:#fff9e8}
+.problem{font-size:21px;font-weight:700;line-height:1.45;padding:20px;background:#fbfcff;border:1px solid var(--line);border-radius:14px;margin:18px 0}
+button,.button{border:0;border-radius:10px;padding:12px 17px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+.primary{background:var(--primary);color:white}.secondary{background:#edf0f5;color:var(--text)}.ghost{background:white;border:1px solid var(--line);color:var(--text)}.danger{background:#fff1ef;color:var(--danger);border:1px solid #ffd5cf}
+button:disabled{opacity:.5;cursor:not-allowed}input,textarea,select{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:white}textarea{min-height:82px;resize:vertical}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.progress{height:9px;background:#edf0f5;border-radius:999px;overflow:hidden;margin:12px 0 22px}.progress>div{height:100%;background:var(--primary)}.timer{font-variant-numeric:tabular-nums;color:var(--muted)}
+.tool{background:var(--soft);border:1px solid #d8ddff;border-radius:14px;padding:16px;margin:16px 0}.result{padding:12px;background:white;border:1px solid var(--line);border-radius:9px;margin-top:8px}
+.feedback{min-height:24px;margin-top:10px;font-weight:700}.ok{color:var(--ok)}.bad{color:var(--danger)}.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.choice{border:1px solid var(--line);border-radius:14px;padding:20px;background:#fbfcff}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.stat{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fbfcff}.stat .n{font-size:27px;font-weight:800}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}th{background:#fafbfe;position:sticky;top:0}
+.daydot{display:inline-flex;width:25px;height:25px;border-radius:50%;align-items:center;justify-content:center;border:1px solid var(--line);font-size:12px;margin-right:3px}.daydot.done{background:#e7f6ef;border-color:#b7dfca;color:var(--ok);font-weight:800}
+.group-card{border:1px solid var(--line);border-radius:12px;padding:14px;margin:8px 0}.g1{border-left:5px solid #687086}.g2{border-left:5px solid #7c8be8}.g3{border-left:5px solid #8b5cf6}.g4{border-left:5px solid #d946ef}
+.lhs-item{padding:15px 0;border-bottom:1px solid var(--line)}.lhs-options{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}.lhs-options label{border:1px solid var(--line);padding:9px;border-radius:8px;text-align:center;font-size:13px}.lhs-options input{width:auto;display:block;margin:0 auto 5px}
+hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 
-const app=express();
-app.disable('x-powered-by');
-app.use(express.json({limit:'2mb'}));
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.profile-grid .full{grid-column:1/-1}
+.step-card{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fbfcff;margin:10px 0}
+.session-map{display:flex;gap:7px;flex-wrap:wrap;margin:15px 0}.session-chip{padding:8px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;background:white}.session-chip.done{background:#e7f6ef;color:var(--ok);border-color:#b7dfca}.session-chip.next{background:var(--soft);border-color:#cfd5ff;font-weight:800}
+.hero{padding:8px 0 4px}.hero h1{font-size:34px}.lead{font-size:17px;line-height:1.6;max-width:760px}
+.checkline{display:flex;gap:9px;align-items:flex-start;margin:8px 0}.checkline input{width:auto;margin-top:4px}
+fieldset{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0}legend{font-weight:750;padding:0 6px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #aab4ff;outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:760px){.home-grid,.stat-grid,.profile-grid{grid-template-columns:1fr}.lhs-options{grid-template-columns:1fr 1fr}.profile-grid .full{grid-column:auto}.shell{width:min(100% - 16px,1120px);margin:12px auto}.card{padding:18px}.hero h1{font-size:28px}.problem{font-size:19px}}
 
-const pool=new Pool({
-  connectionString:process.env.DATABASE_URL,
-  ssl:process.env.PGSSL==='false'?false:{rejectUnauthorized:false}
-});
+</style>
+</head>
+<body>
+<div class="shell"><div class="card" id="app"></div></div>
+<script>
+const BASELINE = {"day": 0, "assisted": [{"id": "D0A1", "prompt": "What number comes next? 6, 13, 27, 55, 111, __", "answer": "223", "topic": "number patterns", "search": "No assistance is available during baseline.", "hint": "", "solution": ""}, {"id": "D0A2", "prompt": "A tank is 1/3 full. After 30 liters are added, it is 7/12 full. What is the tank's total capacity in liters?", "answer": "120", "topic": "fractions and capacity", "search": "No assistance is available during baseline.", "hint": "", "solution": ""}, {"id": "D0A3", "prompt": "A two-digit number has digits that sum to 9. Reversing the digits makes the number 27 smaller. What is the original number?", "answer": "63", "topic": "digit algebra", "search": "No assistance is available during baseline.", "hint": "", "solution": ""}, {"id": "D0A4", "prompt": "Fourteen workers can finish a job in 18 days at the same constant rate. How many days would 21 workers need?", "answer": "12", "topic": "work rate", "search": "No assistance is available during baseline.", "hint": "", "solution": ""}], "transfer": [{"id": "D0T1", "prompt": "What number comes next? 2, 7, 17, 37, 77, __", "answer": "157"}, {"id": "D0T2", "prompt": "A cyclist travels the first half of a route at 18 km/h and the second half at 30 km/h. What is the average speed for the whole route in km/h?", "answer": "22.5"}, {"id": "D0T3", "prompt": "Twenty-five identical-looking coins contain one heavier coin. Using a balance scale, what is the minimum number of weighings needed to guarantee finding it?", "answer": "3"}]};
+const DAYS = [{"day": 1, "assisted": [{"id": "D1A1", "prompt": "What number comes next? 3, 7, 15, 31, 63, __", "answer": "127", "topic": "number patterns", "search": "For recursive number patterns, compare each term with a simple multiplication of the previous term plus or minus a constant.", "hint": "Each term is twice the previous term plus 1.", "solution": "63 × 2 + 1 = 127, so the answer is 127."}, {"id": "D1A2", "prompt": "A tank is 2/5 full. After 30 liters are added, it is 7/10 full. What is the tank's total capacity in liters?", "answer": "100", "topic": "fractions and capacity", "search": "For tank problems, subtract the initial fraction from the final fraction. The difference represents the amount added as a fraction of total capacity.", "hint": "7/10 − 2/5 = 3/10. So 30 liters is 3/10 of the tank.", "solution": "7/10 − 2/5 = 3/10. If 3/10 of capacity is 30 L, total capacity is 100 L."}, {"id": "D1A3", "prompt": "A two-digit number has digits that sum to 10. Reversing its digits makes the number 36 smaller. What is the original number?", "answer": "73", "topic": "digit algebra", "search": "Represent a two-digit number as 10a+b and the reversed number as 10b+a. Their difference is 9(a−b).", "hint": "Use a+b=10 and 9(a−b)=36.", "solution": "a+b=10 and a−b=4, so a=7 and b=3. The original number is 73."}, {"id": "D1A4", "prompt": "Twelve workers can finish a job in 15 days at the same constant rate. How many days would 20 workers need?", "answer": "9", "topic": "work rate", "search": "For constant-rate work, total work can be represented as workers × days.", "hint": "The job requires 12×15 worker-days.", "solution": "12×15=180 worker-days. 180/20=9 days."}], "transfer": [{"id": "D1T1", "prompt": "What number comes next? 1, 4, 10, 22, 46, __", "answer": "94"}, {"id": "D1T2", "prompt": "A car travels half of a journey at 24 km/h and the other half at 40 km/h. What is its average speed for the whole journey in km/h?", "answer": "30"}, {"id": "D1T3", "prompt": "Sixteen visually identical coins contain one heavier coin. Using a balance scale, what is the minimum number of weighings required to guarantee finding it?", "answer": "3"}]}, {"day": 2, "assisted": [{"id": "D2A1", "prompt": "What number comes next? 2, 6, 15, 31, 56, __", "answer": "92", "topic": "difference sequences", "search": "When a sequence looks irregular, calculate the differences between consecutive terms and inspect those differences for a pattern.", "hint": "The differences are 4, 9, 16, 25. Think squares.", "solution": "The next difference is 36, so 56+36=92."}, {"id": "D2A2", "prompt": "If x + 1/x = 5, what is x² + 1/x²?", "answer": "23", "topic": "algebraic identities", "search": "Squaring x + 1/x gives x² + 2 + 1/x².", "hint": "Square both sides, then subtract 2.", "solution": "(x+1/x)²=25=x²+2+1/x², so x²+1/x²=23."}, {"id": "D2A3", "prompt": "All Brens are Togs. Some Togs are Lems. Must some Brens be Lems? Type yes or no.", "answer": "no", "topic": "formal logic", "search": "In syllogisms, 'all A are B' plus 'some B are C' does not guarantee that the members of B that are C belong to A.", "hint": "The Togs that are Lems could all be Togs that are not Brens.", "solution": "No. The premises do not guarantee any overlap between Brens and Lems."}, {"id": "D2A4", "prompt": "Red, blue, and green marbles are in the ratio 4:7:9. If there are 35 blue marbles, how many marbles are there in total?", "answer": "100", "topic": "ratios", "search": "Use the known ratio part to find the scale factor, then multiply by the sum of all ratio parts.", "hint": "Seven ratio units correspond to 35 marbles.", "solution": "One unit=5. Total ratio units=4+7+9=20. 20×5=100."}], "transfer": [{"id": "D2T1", "prompt": "What number comes next? 5, 8, 14, 26, 50, __", "answer": "98"}, {"id": "D2T2", "prompt": "A drawer contains socks in four colors, with plenty of each color. What is the minimum number of socks you must draw blindly to guarantee at least 3 socks of the same color?", "answer": "9"}, {"id": "D2T3", "prompt": "A clock loses 5 minutes every 3 hours. It is set correctly at 12:00 noon. What time will it display when the real time is 12:00 midnight? Use HH:MM.", "answer": "23:40", "accepted": ["23:40", "11:40", "11:40 pm", "11:40pm"]}]}, {"day": 3, "assisted": [{"id": "D3A1", "prompt": "What number comes next? 4, 7, 13, 22, 34, __", "answer": "49", "topic": "difference sequences", "search": "Inspect the differences between terms. A steadily increasing difference may itself follow an arithmetic pattern.", "hint": "The differences are 3, 6, 9, 12.", "solution": "The next difference is 15, so 34+15=49."}, {"id": "D3A2", "prompt": "Two positive integers have a sum of 26 and a product of 165. What is the larger integer?", "answer": "15", "topic": "factor pairs", "search": "For positive integer sum/product problems, find factor pairs of the product and check which pair has the required sum.", "hint": "Find two factors of 165 that add to 26.", "solution": "11×15=165 and 11+15=26, so the larger integer is 15."}, {"id": "D3A3", "prompt": "Five people A, B, C, D, E stand in a line. A is before D. C is immediately after B. E is not first or last. Which order satisfies all rules? A) B C A E D  B) E A B C D  C) A D B E C  D) A C B D E", "answer": "bc aed", "accepted": ["bcaed", "a"], "topic": "ordering logic", "search": "For ordering puzzles, test each answer choice against every constraint. 'Immediately after' means adjacent and in a fixed order.", "hint": "First keep only choices containing BC as an adjacent pair, then check A before D and E not at an end.", "solution": "Option A, BCAED, satisfies every rule."}, {"id": "D3A4", "prompt": "A 150-meter train enters a 250-meter tunnel at 20 m/s. From the instant the front enters, how many seconds pass until the entire train exits?", "answer": "20", "topic": "distance rate time", "search": "For a train to fully clear a tunnel, the front of the train must travel the tunnel length plus the train length.", "hint": "The front must travel 150+250 meters.", "solution": "Total distance=400 m. At 20 m/s, time=400/20=20 seconds."}], "transfer": [{"id": "D3T1", "prompt": "The sequence is 2, 10, 30, 68, 130, __. What comes next?", "answer": "222"}, {"id": "D3T2", "prompt": "A bag has at least four balls of each of three colors. What is the minimum number of balls you must draw blindly to guarantee at least 4 of one color?", "answer": "10"}, {"id": "D3T3", "prompt": "Three switches downstairs each control one of three incandescent bulbs upstairs. You may manipulate the switches however you like, but may go upstairs only once. What is the minimum number of switches you need to turn on at some point to identify which switch controls each bulb?", "answer": "2"}]}, {"day": 4, "assisted": [{"id": "D4A1", "prompt": "What number comes next? 4, 10, 22, 46, 94, __", "answer": "190", "topic": "number patterns", "search": "Try multiplying each term by a constant and then adding a constant.", "hint": "Each term is twice the previous term plus 2.", "solution": "94×2+2=190."}, {"id": "D4A2", "prompt": "A rectangle has perimeter 62 cm. Its length is 4 cm more than twice its width. What is its area in cm²?", "answer": "198", "topic": "algebra and geometry", "search": "For a rectangle, 2(L+W)=perimeter. Substitute the relationship between length and width.", "hint": "L+W=31 and L=2W+4.", "solution": "3W+4=31, so W=9 and L=22. Area=9×22=198."}, {"id": "D4A3", "prompt": "Some A are B. No B are C. Can some A still be C? Type yes or no.", "answer": "yes", "topic": "formal logic", "search": "A statement about 'some A are B' does not describe every A. Members of A outside B may have other properties.", "hint": "Only the A's that are B are prevented from being C.", "solution": "Yes. Some other A that is not B could be C."}, {"id": "D4A4", "prompt": "Ten people each shake hands with every other person exactly once. How many handshakes occur?", "answer": "45", "topic": "combinations", "search": "The number of unique pairs among n people is n(n−1)/2.", "hint": "Count unique pairs of people.", "solution": "10×9/2=45 handshakes."}], "transfer": [{"id": "D4T1", "prompt": "What number comes next? 1, 2, 5, 14, 41, __", "answer": "122"}, {"id": "D4T2", "prompt": "A car travels half of a journey at 30 km/h and half at 45 km/h. What is the average speed for the whole journey in km/h?", "answer": "36"}, {"id": "D4T3", "prompt": "Three boxes are labeled APPLES, ORANGES, and MIXED, but every label is wrong. You may draw one fruit from one box to determine all labels. Which labeled box should you draw from? Type apples, oranges, or mixed.", "answer": "mixed"}]}, {"day": 5, "assisted": [{"id": "D5A1", "prompt": "What number comes next? 7, 15, 31, 63, 127, __", "answer": "255", "topic": "number patterns", "search": "Compare each term with double the previous term.", "hint": "Each term is twice the previous term plus 1.", "solution": "127×2+1=255."}, {"id": "D5A2", "prompt": "A tank is 5/8 full. After 21 liters are added, it is 7/8 full. What is the tank's total capacity in liters?", "answer": "84", "topic": "fractions and capacity", "search": "Subtract the two fullness fractions; that difference corresponds to the liters added.", "hint": "7/8−5/8=1/4 of the tank.", "solution": "One quarter of the tank is 21 L, so total capacity=84 L."}, {"id": "D5A3", "prompt": "A two-digit number has digits that sum to 13. Reversing the digits makes the number 45 smaller. What is the original number?", "answer": "94", "topic": "digit algebra", "search": "A two-digit number is 10a+b and its reverse is 10b+a. Their difference is 9(a−b).", "hint": "Use a+b=13 and a−b=5.", "solution": "Solving gives a=9 and b=4, so the number is 94."}, {"id": "D5A4", "prompt": "Eight machines make 8 identical items in 12 minutes. At the same individual rate, how many minutes do 20 machines need to make 20 items?", "answer": "12", "topic": "rates", "search": "If each machine independently makes one item in the same amount of time, increasing machines and items proportionally does not change the elapsed time.", "hint": "Determine how long one machine takes to make one item.", "solution": "Each machine makes one item in 12 minutes, so 20 machines make 20 items in 12 minutes."}], "transfer": [{"id": "D5T1", "prompt": "What number comes next? 10, 13, 19, 31, 55, __", "answer": "103"}, {"id": "D5T2", "prompt": "What is the minimum number of people needed to guarantee that at least two were born in the same month?", "answer": "13"}, {"id": "D5T3", "prompt": "All K are M. No M are P. Some Q are K. Must some Q be not-P? Type yes or no.", "answer": "yes"}]}, {"day": 6, "assisted": [{"id": "D6A1", "prompt": "What number comes next? 2, 5, 14, 41, 122, __", "answer": "365", "topic": "number patterns", "search": "Try a repeated multiply-and-adjust rule.", "hint": "Each term is three times the previous term minus 1.", "solution": "122×3−1=365."}, {"id": "D6A2", "prompt": "Two positive numbers satisfy x−y=4 and xy=45. What is x+y?", "answer": "14", "topic": "algebraic identities", "search": "Use (x+y)²=(x−y)²+4xy.", "hint": "Compute (x+y)² from the given difference and product.", "solution": "(x+y)²=16+180=196. Since the numbers are positive, x+y=14."}, {"id": "D6A3", "prompt": "Five people J, K, L, M, N stand in a line. J is before M. L is immediately before K. N is not first. Which order satisfies all rules? A) N J L K M  B) L K M J N  C) J K L N M  D) J M N K L", "answer": "njlkm", "accepted": ["njlkm", "a"], "topic": "ordering logic", "search": "Check fixed adjacent pairs first, then apply before/after and position restrictions.", "hint": "Keep choices containing LK together in that order, then check J before M and N not first.", "solution": "Option A, NJLKM, satisfies all rules."}, {"id": "D6A4", "prompt": "Red, blue, and green counters are in the ratio 3:5:8. If there are 64 green counters, how many counters are there in total?", "answer": "128", "topic": "ratios", "search": "Find the scale factor from the known ratio part, then multiply by the total number of ratio units.", "hint": "Eight units correspond to 64 counters.", "solution": "One unit=8. Total units=16, so total counters=128."}], "transfer": [{"id": "D6T1", "prompt": "What number comes next? 1, 5, 14, 30, 55, __", "answer": "91"}, {"id": "D6T2", "prompt": "Worker A can finish a job alone in 6 hours and Worker B can finish it alone in 3 hours. How many hours do they need working together?", "answer": "2"}, {"id": "D6T3", "prompt": "Twenty-seven identical-looking coins contain one heavier coin. Using a balance scale, what is the minimum number of weighings needed to guarantee finding it?", "answer": "3"}]}, {"day": 7, "assisted": [{"id": "D7A1", "prompt": "What number comes next? 3, 12, 39, 120, 363, __", "answer": "1092", "topic": "number patterns", "search": "Check whether multiplying by a constant and then adding a constant reproduces each next term.", "hint": "Each term is three times the previous term plus 3.", "solution": "363×3+3=1092."}, {"id": "D7A2", "prompt": "A two-digit number equals four times the sum of its digits. Reversing the digits makes the number 18 larger. What is the original number?", "answer": "24", "topic": "digit algebra", "search": "Represent the number as 10a+b. Use the relation to its digit sum and the difference between the reversed and original numbers.", "hint": "10a+b=4(a+b), and 9(b−a)=18.", "solution": "From the first equation b=2a. From the second, b−a=2, so a=2 and b=4. The number is 24."}, {"id": "D7A3", "prompt": "All V are W. Some W are X. No X are Y. Must some V be not-Y? Type yes or no.", "answer": "no", "topic": "formal logic", "search": "A conclusion about all V cannot be drawn from the fact that only some W are X unless the premises link V to those particular W.", "hint": "The W's that are X do not have to be V's.", "solution": "No. The premises do not guarantee that any V belongs to X or is otherwise not-Y."}, {"id": "D7A4", "prompt": "How many liters of a 20% solution should be mixed with a 50% solution to make 30 liters of a 40% solution? Enter the liters of the 20% solution.", "answer": "10", "topic": "mixtures", "search": "For mixture problems, amount of pure substance before mixing equals amount after mixing.", "hint": "Let x be liters of 20% solution. Use 0.2x+0.5(30−x)=0.4×30.", "solution": "0.2x+15−0.5x=12, so x=10 liters."}], "transfer": [{"id": "D7T1", "prompt": "What number comes next? 8, 11, 17, 29, 53, __", "answer": "101"}, {"id": "D7T2", "prompt": "A clock shows 4:20. What is the smaller angle, in degrees, between the hour hand and minute hand?", "answer": "10"}, {"id": "D7T3", "prompt": "A drawer contains at least four socks of each of three colors. What is the minimum number of socks you must draw blindly to guarantee at least 4 socks of one color?", "answer": "10"}]}];
+const LHS_ITEMS = ["No matter how much energy I put into a task, I feel I have no control over the outcome.", "I feel that my ability to solve problems is the cause of my success.", "I can find solutions to difficult problems.", "I don’t place myself in situations in which I cannot predict the outcome.", "If I complete a task successfully, it is probably because of my ability.", "I have the ability to solve most of life’s problems.", "When I do not succeed at a task, I do not attempt any similar tasks because I feel that I would fail them also.", "When something doesn’t turn out the way I planned, I know it is because I didn’t have the ability to start with.", "Other people have more control over their success and/or failure than I do.", "I try new tasks if I have failed similar ones in the past.", "When I perform poorly, it is because I don’t have the ability to perform better.", "I accept tasks even if I am not sure that I will success at them.", "I feel that I have little control over the outcomes of my work.", "I am successful at most tasks I try.", "I feel that anyone else could be better than me at most tasks.", "I am able to reach my goals in life.", "When I don’t succeed at a task, I find myself blaming my own stupidity for my failure.", "No matter how hard I try, things never seem to work out the way I want them to.", "I feel that my success reflects my ability, not chance.", "My behavior seems to influence the success of a work group."];
+const LHS_DIRECT = [1, 4, 7, 8, 9, 11, 13, 15, 17, 18];
+const LHS_REVERSE = [2, 3, 5, 6, 10, 12, 14, 16, 19, 20];
+// Authentication is handled by the cloud server.
+const TRANSFER_LIMIT_SEC = 180;
 
-const secret=process.env.SESSION_SECRET;
-const operatorPassword=process.env.OPERATOR_PASSWORD;
-
-if(!process.env.DATABASE_URL||!secret||!operatorPassword){
-  throw Error('Set DATABASE_URL, SESSION_SECRET and OPERATOR_PASSWORD');
-}
-
-const h=x=>crypto.createHmac('sha256',secret).update(x).digest('base64url');
-
-const token=(role,code,ttl=86400)=>{
-  const payload=Buffer.from(JSON.stringify({
-    role,code,exp:Date.now()+ttl*1000
-  })).toString('base64url');
-  return payload+'.'+h(payload);
+const GROUPS = {
+  1: {key:"g1", label:"Group 1 — Human control / No AI", short:"No AI", desc:"Participant solves independently. No external assistance."},
+  2: {key:"g2", label:"Group 2 — Low assistance / Search support", short:"Search", desc:"Participant remains in control and can retrieve short reference information, but no generated solution."},
+  3: {key:"g3", label:"Group 3 — Shared control / Guided AI", short:"Guided AI", desc:"AI provides progressive hints, while the participant must still produce and submit the answer."},
+  4: {key:"g4", label:"Group 4 — AI-dominant / Full AI", short:"Full AI", desc:"AI can provide the complete solution and can insert the answer for the participant."}
 };
 
-function auth(req,res,next){
-  try{
-    const [payload,sig]=(req.headers.authorization||'')
-      .replace(/^Bearer /,'').split('.');
-    if(!payload||!sig||
-       !crypto.timingSafeEqual(Buffer.from(h(payload)),Buffer.from(sig))){
-      throw 0;
-    }
-    const p=JSON.parse(Buffer.from(payload,'base64url'));
-    if(p.exp<Date.now())throw 0;
-    req.auth=p;
-    next();
-  }catch{
-    res.status(401).json({error:'Sign in again'});
-  }
+let current=null, timer=null, trialStart=null, currentStage=null;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+const norm=s=>String(s??"").trim().toLowerCase().replace(/\s+/g," ");
+function uid(){return "P"+Math.random().toString(36).slice(2,8).toUpperCase()}
+let cloudParticipants=[], authToken='', authRole='', writeQueue=Promise.resolve();
+function getPs(){return cloudParticipants}
+function savePs(a){cloudParticipants=a}
+async function api(path,method='GET',body){const r=await fetch('/api'+path,{method,headers:{'Content-Type':'application/json',...(authToken?{Authorization:'Bearer '+authToken}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})});const v=await r.json();if(!r.ok)throw Error(v.error||'Cloud request failed');return v}
+function saveCurrent(){if(!current)return;const a=getPs(),i=a.findIndex(p=>p.code===current.code);if(i>=0)a[i]=current;else a.push(current);savePs(a);const snapshot=JSON.parse(JSON.stringify(current));writeQueue=writeQueue.then(()=>api('/participants/'+encodeURIComponent(snapshot.code),'PUT',snapshot)).catch(e=>{alert('Cloud save failed: '+e.message+' — stop and contact the researcher.');throw e});}
+function getP(code){return getPs().find(p=>p.code.toUpperCase()===String(code).toUpperCase())||null}
+function stopTimer(){if(timer)clearInterval(timer);timer=null}
+function dl(name,text,type){const b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function csv(v){return '"'+String(v??"").replaceAll('"','""')+'"'}
+function log(type,data={}){current.events.push({ts:new Date().toISOString(),type,day:current.activeDay||null,stage:currentStage,...data});saveCurrent()}
+
+function renderHome(){
+ stopTimer(); current=null; authToken=""; authRole=""; cloudParticipants=[];
+ $("app").innerHTML=`
+ <div class="hero"><span class="pill">Psychology × AI · Day 0 + 7 study days</span>
+ <h1>AI, Problem Solving & Persistence Study</h1>
+ <p class="lead">Welcome. This study looks at how people solve challenging problems across several short sessions. There are <strong>no penalties for wrong answers</strong>—we are interested in your natural problem-solving process.</p></div>
+ <div class="home-grid">
+  <div class="choice"><h2>Participant</h2><p>Enter your study code, complete a short background form once, then continue to your next session.</p><button class="primary" onclick="subjectLogin()">Continue as participant</button></div>
+  <div class="choice"><h2>Researcher / Operator</h2><p>Create study codes, assign conditions, monitor completion, and export pilot data.</p><button class="secondary" onclick="operatorLogin()">Open researcher dashboard</button></div>
+ </div>
+ <div class="notice small"><strong>For pilot testing:</strong> responses are stored in the cloud. Participants need their student code; internet is required.</div>`;
+}
+async function operatorLogin(){
+ const password=prompt('Researcher password:');if(password===null)return;
+ try{const r=await api('/operator/login','POST',{password});authToken=r.token;authRole='admin';cloudParticipants=await api('/participants');renderOperator()}catch(e){alert(e.message)}
+}
+function renderOperator(){
+ stopTimer();
+ const ps=getPs();
+ const counts={1:0,2:0,3:0,4:0};ps.forEach(p=>counts[p.group]=(counts[p.group]||0)+1);
+ $("app").innerHTML=`
+ <div class="row between"><div><span class="pill">Operator View</span><h1>Day 0 + 7-Day Study Dashboard</h1></div><button class="ghost" onclick="renderHome()">Exit operator</button></div>
+ <div class="stat-grid">${[1,2,3,4].map(g=>`<div class="stat"><div class="muted">${GROUPS[g].short}</div><div class="n">${counts[g]}</div><div class="small">Group ${g}</div></div>`).join("")}</div>
+ <div class="notice"><strong>Day 0 baseline:</strong> every participant receives the same no-assistance baseline before Days 1–7. Group-specific assistance begins only after baseline.<br><br><strong>Group meaning for Days 1–7:</strong>
+ <div class="group-card g1"><b>1 — Human control:</b> no assistance.</div>
+ <div class="group-card g2"><b>2 — Low assistance:</b> search/reference support only.</div>
+ <div class="group-card g3"><b>3 — Shared control:</b> AI hints, human submits the answer.</div>
+ <div class="group-card g4"><b>4 — AI-dominant:</b> full AI solution + “Use AI answer”.</div></div>
+
+ <h2>Create participant</h2>
+ <div class="row gap wrap">
+   <div style="flex:1;min-width:180px"><label>Participant code</label><input id="newCode" placeholder="e.g. P001"></div>
+   <div style="flex:2;min-width:260px"><label>Condition</label><select id="newGroup">${[1,2,3,4].map(g=>`<option value="${g}">${GROUPS[g].label}</option>`).join("")}</select></div>
+ </div>
+ <div class="actions"><button class="primary" onclick="createParticipant()">Create participant</button></div>
+
+ <hr>
+ <div class="row between"><h2>Participants</h2><div class="actions">
+ <button class="secondary" onclick="exportProfiles()">Background CSV</button>
+ <button class="secondary" onclick="exportTrials()">Trials CSV</button>
+ <button class="secondary" onclick="exportLHS()">LHS CSV</button>
+ <button class="secondary" onclick="exportJSON()">Backup JSON</button>
+ 
+ </div></div>
+ <div class="table-wrap"><table><thead><tr><th>Code</th><th>Group</th><th>Sessions 0–7</th><th>Next session</th><th>Transfer skips</th><th>Tool uses</th><th>LHS</th><th>Actions</th></tr></thead>
+ <tbody>${ps.map(p=>participantRow(p)).join("")}</tbody></table></div>
+ 
+ <div class="notice warn small"><strong>Method note:</strong> Day 0 establishes baseline; the seven intervention-day sets are intentionally matched by structure and intended difficulty, but “equal difficulty” must be checked empirically in a pilot before the main study.</div>`;
 }
 
-const admin=(req,res,next)=>
-  req.auth.role==='admin'
-    ?next()
-    :res.status(403).json({error:'Researcher only'});
+function participantRow(p){
+ const done=new Set((p.days||[]).filter(d=>d.completed).map(d=>d.day));
+ const sessions=[0,1,2,3,4,5,6,7];
+ const dots=sessions.map(d=>`<span class="daydot ${done.has(d)?"done":""}" title="${d===0?"Baseline":"Day "+d}">${done.has(d)?"✓":d}</span>`).join("");
+ const next=sessions.find(d=>!done.has(d));
+ const skips=(p.trials||[]).filter(t=>t.stage==="transfer"&&t.skipped).length;
+ const tools=(p.trials||[]).reduce((s,t)=>s+(t.toolUses||0),0);
+ const nextLabel = next===undefined ? "Complete" : (next===0 ? "Baseline" : "Day "+next);
+ const hasStartedIntervention=(p.trials||[]).some(t=>t.day>=1)||(p.days||[]).some(d=>d.day>=1&&d.completed);
+ return `<tr><td><b>${esc(p.code)}</b></td><td>${p.group} — ${GROUPS[p.group].short}</td><td>${dots}</td><td>${nextLabel}</td><td>${skips}</td><td>${tools}</td><td>${p.lhs?`<b>${p.lhs.total}/80</b>`:"—"}</td>
+ <td><button class="ghost small" onclick="showParticipant('${esc(p.code)}')">Details</button> ${!hasStartedIntervention?`<button class="ghost small" onclick="editGroup('${esc(p.code)}')">Group</button>`:""}</td></tr>`;
+}
 
-const safeCode=s=>String(s||'').trim().toUpperCase().replace(/\s+/g,'');
+async function createParticipant(){
+ let code=norm($("newCode").value).toUpperCase().replace(/\s+/g,"");if(!code)code=uid();
+ try{const r=await api('/participants','POST',{code,group:Number($("newGroup").value)});cloudParticipants.push(r.participant);renderOperator();alert('Participant '+code+' created!\n\nGive this code to the participant.')}catch(e){alert(e.message)}
+}
+async function editGroup(code){
+ const p=getP(code);if(!p)return;
+ const g=Number(prompt("Enter group 1, 2, 3, or 4:",p.group));
+ if(![1,2,3,4].includes(g))return;
+ p.group=g;try{await api("/participants/"+encodeURIComponent(code),"PUT",p);renderOperator()}catch(e){alert(e.message)}
+}
+function showParticipant(code){
+ const p=getP(code);if(!p)return;
+ const daySummaries=[0,1,2,3,4,5,6,7].map(d=>{
+   const tr=(p.trials||[]).filter(t=>t.day===d&&t.stage==="transfer");
+   const skips=tr.filter(t=>t.skipped).length;
+   const solved=tr.filter(t=>t.correct).length;
+   const voluntary=tr.filter(t=>t.skipped&&t.endedAt).map(t=>(t.endedAt-t.startedAt)/1000);
+   const avg=voluntary.length?(voluntary.reduce((a,b)=>a+b,0)/voluntary.length).toFixed(1):"—";
+   return `<tr><td>${d===0?"Day 0 baseline":"Day "+d}</td><td>${tr.length?"Yes":"No"}</td><td>${solved}/${tr.length}</td><td>${skips}</td><td>${avg}</td></tr>`;
+ }).join("");
+ const profileHtml=p.profile
+   ? `<h2>Background profile</h2><div class="table-wrap"><table><tbody>
+      <tr><th>Age</th><td>${esc(p.profile.age)}</td><th>University year</th><td>${esc(p.profile.year)}</td></tr>
+      <tr><th>Major</th><td>${esc(p.profile.major)}</td><th>GPA</th><td>${esc(p.profile.gpa||"Not provided")}</td></tr>
+      <tr><th>AI frequency</th><td>${esc(p.profile.aiFrequency)}</td><th>AI hours/week</th><td>${esc(p.profile.aiHours)}</td></tr>
+      <tr><th>AI for problem solving</th><td>${esc(p.profile.aiProblemSolving)}</td><th>AI when stuck</th><td>${esc(p.profile.aiWhenStuck)}</td></tr>
+      <tr><th>Common AI tools</th><td colspan="3">${esc((p.profile.aiTools||[]).join(", ")||"Not provided")}</td></tr>
+      </tbody></table></div>`
+   : `<p class="muted">Background profile not completed yet.</p>`;
+ const lhsHtml=p.lhs
+   ? `<div class="stat" style="max-width:300px"><div class="muted">Learned Helplessness Scale</div><div class="n">${p.lhs.total}</div><div>Range 20–80</div></div><p class="small muted">Higher score = greater learned helplessness.</p>`
+   : `<p>Not completed yet.</p>`;
+ $("app").innerHTML=`<div class="row between"><div><span class="pill">Operator View</span><h1>${esc(p.code)}</h1><p>${GROUPS[p.group].label}</p></div><button class="ghost" onclick="renderOperator()">Back</button></div>
+ <div class="notice"><strong>Day 0 is common to all groups:</strong> no AI, search, hints, or full solutions are available during baseline.</div>
+ ${profileHtml}
+ <h2>Baseline + daily transfer summary</h2><table><thead><tr><th>Session</th><th>Transfer recorded</th><th>Solved</th><th>Skips</th><th>Mean seconds before voluntary skip</th></tr></thead><tbody>${daySummaries}</tbody></table>
+ <h2>Final LHS Form B</h2>${lhsHtml}
+ <div class="actions"><button class="secondary" onclick="exportOne('${esc(p.code)}')">Export participant JSON</button></div>`;
+}
+function subjectLogin(){
+ $("app").innerHTML=`<span class="pill">Participant</span><h1>Enter your study code</h1>
+ <p class="lead">Use the same code every time you return. Your code keeps your sessions connected without asking for your name.</p>
+ <label for="subjectCode"><strong>Participant code</strong></label><input id="subjectCode" placeholder="Example: P001" autocomplete="off" aria-describedby="codeHelp">
+ 
+ <p id="codeHelp" class="small muted">Your researcher will give you this code.</p>
+ <div class="actions"><button class="primary" onclick="openSubject()">Continue</button><button class="ghost" onclick="renderHome()">Back</button></div><div id="loginMsg" class="feedback" aria-live="polite"></div>`;
+ $("subjectCode").focus();
+ $("subjectCode").onkeydown=e=>{if(e.key==="Enter")openSubject()};
+}
+async function openSubject(){
+ try{const r=await api('/participant/login','POST',{code:$("subjectCode").value});authToken=r.token;authRole='participant';cloudParticipants=[r.participant];current=r.participant;if(!current.profile){renderProfile();return}continueToNextSession()}catch(e){$("loginMsg").textContent=e.message}
+}
+function renderProfile(){
+ stopTimer();
+ $("app").innerHTML=`<span class="pill">One-time setup · before Day 0</span><h1>Tell us a little about your study background</h1>
+ <p class="lead">This short form helps us describe the participant sample and understand differences in prior AI experience. It is <strong>not a test</strong>, and there are no right or wrong answers.</p>
+ <div class="notice small"><strong>Privacy:</strong> please do not enter your name, email, student ID, or any other identifying information.</div>
+ <div class="profile-grid">
+   <div><label for="age"><strong>Age *</strong></label><input id="age" type="number" min="16" max="99" inputmode="numeric" placeholder="e.g., 20"></div>
+   <div><label for="year"><strong>Current university year *</strong></label><select id="year"><option value="">Select...</option><option>1st year</option><option>2nd year</option><option>3rd year</option><option>4th year</option><option>5th year or above</option><option>Graduate student</option><option>Not currently in university</option></select></div>
+   <div class="full"><label for="major"><strong>Field / major of study *</strong></label><input id="major" placeholder="e.g., Psychology, Engineering, Business"></div>
+   <div><label for="gpa"><strong>Current GPA</strong> <span class="muted">(optional)</span></label><input id="gpa" placeholder="e.g., 3.4/4.0 or 85/100"></div>
+   <div><label for="aiFreq"><strong>How often do you use AI tools? *</strong></label><select id="aiFreq"><option value="">Select...</option><option>Never</option><option>Rarely</option><option>Sometimes</option><option>Often</option><option>Daily</option></select></div>
+   <div><label for="aiHours"><strong>Approximate AI use per week *</strong></label><select id="aiHours"><option value="">Select...</option><option>0 hours</option><option>Less than 1 hour</option><option>1–3 hours</option><option>4–7 hours</option><option>8–14 hours</option><option>15+ hours</option></select></div>
+   <div><label for="problemAI"><strong>Have you used AI for math, logic, or problem-solving tasks? *</strong></label><select id="problemAI"><option value="">Select...</option><option>Yes</option><option>No</option></select></div>
+   <div><label for="stuckAI"><strong>When you get stuck on an academic task, how often do you turn to AI? *</strong></label><select id="stuckAI"><option value="">Select...</option><option>Never</option><option>Rarely</option><option>Sometimes</option><option>Often</option><option>Almost always</option></select></div>
+   <div class="full"><fieldset><legend>AI tools you commonly use <span class="muted">(optional)</span></legend>
+     <label class="checkline"><input type="checkbox" name="aitool" value="ChatGPT">ChatGPT</label>
+     <label class="checkline"><input type="checkbox" name="aitool" value="Gemini">Gemini</label>
+     <label class="checkline"><input type="checkbox" name="aitool" value="Copilot">Microsoft Copilot</label>
+     <label class="checkline"><input type="checkbox" name="aitool" value="Claude">Claude</label>
+     <label class="checkline"><input type="checkbox" name="aitool" value="Other">Other</label>
+   </fieldset></div>
+ </div>
+ <div class="actions"><button class="primary" onclick="saveProfile()">Save & continue to study</button><button class="ghost" onclick="renderHome()">Exit</button></div>
+ <div id="profileMsg" class="feedback" aria-live="polite"></div>`;
+}
+function saveProfile(){
+ const required=["age","year","major","aiFreq","aiHours","problemAI","stuckAI"];
+ const missing=required.find(id=>!String($(id).value||"").trim());
+ if(missing){$("profileMsg").innerHTML='<span class="bad">Please complete all questions marked with *.</span>';$(missing).focus();return}
+ const age=Number($("age").value);if(!Number.isFinite(age)||age<16||age>99){$("profileMsg").innerHTML='<span class="bad">Please enter a valid age.</span>';$("age").focus();return}
+ current.profile={
+   age,year:$("year").value,major:$("major").value.trim(),gpa:$("gpa").value.trim(),
+   aiFrequency:$("aiFreq").value,aiHours:$("aiHours").value,aiProblemSolving:$("problemAI").value,
+   aiWhenStuck:$("stuckAI").value,aiTools:[...document.querySelectorAll('input[name="aitool"]:checked')].map(x=>x.value),
+   completedAt:new Date().toISOString()
+ };
+ log("profile_completed",{age:current.profile.age,year:current.profile.year,aiFrequency:current.profile.aiFrequency});saveCurrent();
+ $("app").innerHTML=`<span class="pill">Setup complete</span><h1>You're ready.</h1><p class="lead">Thank you. Your background form is saved. Next is the common Day 0 baseline.</p><div class="notice">Work at your own pace, read each problem carefully, and give your best answer. Wrong answers are completely okay.</div><button class="primary" onclick="continueToNextSession()">Continue to Day 0</button>`;
+}
+function continueToNextSession(){
+ const done=new Set((current.days||[]).filter(d=>d.completed).map(d=>d.day));
+ const sessions=[0,1,2,3,4,5,6,7];
+ const next=sessions.find(d=>!done.has(d));
+ if(next===undefined){if(!current.lhs){current.activeDay=7;saveCurrent();renderLHS();return}renderSubjectComplete();return}
+ if(current.activeDay!==next || !["assisted","transfer"].includes(current.activeStage)){current.activeDay=next;current.activeStage="assisted";current.activeIndex=0}
+ saveCurrent();renderDayIntro();
+}
+function renderDayIntro(){
+ const done=new Set((current.days||[]).filter(d=>d.completed).map(d=>d.day));
+ const chips=[0,1,2,3,4,5,6,7].map(d=>`<span class="session-chip ${done.has(d)?"done":(d===current.activeDay?"next":"")}">${done.has(d)?"✓ ":""}${d===0?"Baseline":"Day "+d}</span>`).join("");
+ if(current.activeDay===0){
+   $("app").innerHTML=`<span class="pill">Participant · Day 0</span><h1>Baseline session</h1>
+   <div class="session-map" aria-label="Study progress">${chips}</div>
+   <p class="lead">Today gives us your starting point before the seven study days begin.</p>
+   <div class="step-card"><h3>What you will do</h3><p><strong>Part 1:</strong> 4 reasoning problems.<br><strong>Part 2:</strong> 3 independent persistence problems.</p></div>
+   <div class="notice"><strong>No assistance is available during Day 0 for anyone.</strong> Try each problem yourself. Wrong answers are okay—please respond naturally.</div>
+   <div class="actions"><button class="primary" onclick="startDay()">Start baseline</button><button class="ghost" onclick="renderHome()">Save & exit</button></div>`;return;
+ }
+ const g=GROUPS[current.group];
+ $("app").innerHTML=`<span class="pill">Participant · Day ${current.activeDay} of 7</span><h1>Ready for Day ${current.activeDay}?</h1>
+ <div class="session-map" aria-label="Study progress">${chips}</div>
+ <p class="lead">Each session has two short parts. Focus on one problem at a time—you do not need to be perfect.</p>
+ <div class="step-card"><h3>Part 1 · Problem-solving phase</h3><p>Your available support today is <strong>${esc(g.short)}</strong>. Use it naturally if it is available to you.</p></div>
+ <div class="step-card"><h3>Part 2 · Independent phase</h3><p>Assistance will be turned off for everyone. Keep trying for as long as you wish, or choose <strong>Skip</strong> if you decide to stop.</p></div>
+ <div class="notice small">Your condition stays the same across all seven study days. Please complete the tasks in a quiet setting when possible.</div>
+ <div class="actions"><button class="primary" onclick="startDay()">Start Day ${current.activeDay}</button><button class="ghost" onclick="renderHome()">Save & exit</button></div>`;
+}
+function startDay(){
+ if(!["assisted","transfer"].includes(current.activeStage)) current.activeStage="assisted";
+ if(typeof current.activeIndex!=="number") current.activeIndex=0;
+ saveCurrent();renderTask();
+}
+function dayData(){return current.activeDay===0 ? BASELINE : DAYS[current.activeDay-1]}
+function tasksForStage(){return current.activeStage==="assisted"?dayData().assisted:dayData().transfer}
 
-app.post('/api/operator/login',(req,res)=>{
-  const a=Buffer.from(String(req.body.password||''));
-  const b=Buffer.from(operatorPassword);
-  if(a.length!==b.length||!crypto.timingSafeEqual(a,b)){
-    return res.status(401).json({error:'Incorrect password'});
-  }
-  res.json({token:token('admin','',8*3600)});
-});
+function makeTrial(task){
+ return {participant:current.code,group:current.group,day:current.activeDay,stage:current.activeStage,taskId:task.id,startedAt:Date.now(),endedAt:null,firstResponseMs:null,attempts:0,outcome:null,correct:0,skipped:0,timedOut:0,toolUses:0,finalAnswer:""};
+}
+function activeTrial(){return current.trials[current.trials.length-1]}
+function answerCorrect(task,v){
+ const a=norm(v),accepted=[norm(task.answer),...(task.accepted||[]).map(norm)];
+ if(accepted.includes(a))return true;
+ const x=Number(a.replace("$","")),y=Number(String(task.answer).replace("$",""));return !Number.isNaN(x)&&!Number.isNaN(y)&&Math.abs(x-y)<1e-9;
+}
+function renderTask(){
+ stopTimer();currentStage=current.activeStage;
+ const set=tasksForStage(),task=set[current.activeIndex];
+ if(!task){advanceStage();return}
+ const dayDone=current.activeIndex+(current.activeStage==="transfer"?dayData().assisted.length:0), dayTotal=dayData().assisted.length+dayData().transfer.length;
+ let tool="";
+ if(current.activeStage==="assisted"){
+   if(current.activeDay===0)tool=`<div class="tool"><b>Day 0 — Baseline</b><p class="muted">No assistance is available. This is identical for all participants.</p></div>`;
+   else if(current.group===1)tool=`<div class="tool"><b>Level 1 — Human control</b><p class="muted">No assistance is available.</p></div>`;
+   else if(current.group===2)tool=`<div class="tool"><b>Level 2 — Search support</b><p class="muted">Retrieve short reference information. The search tool does not provide the final solution.</p><input id="searchQ" placeholder="Search the reference tool..."><button class="secondary" id="searchBtn" style="margin-top:8px">Search</button><div id="toolOut"></div></div>`;
+   else if(current.group===3)tool=`<div class="tool"><b>Level 3 — Guided AI</b><p class="muted">The AI can give progressive hints, but you still solve and submit the problem yourself.</p><button class="secondary" id="hintBtn">Ask AI for a hint</button><div id="toolOut"></div></div>`;
+   else if(current.group===4)tool=`<div class="tool"><b>Level 4 — AI-dominant</b><p class="muted">The AI can provide the full solution and insert its answer into your response box.</p><textarea id="aiQ" placeholder="Ask AI for help..."></textarea><div class="actions"><button class="secondary" id="solveBtn">Ask AI to solve</button><button class="secondary" id="useBtn" disabled>Use AI answer</button></div><div id="toolOut"></div></div>`;
+ } else {
+   tool=`<div class="notice"><strong>Independent phase:</strong> all assistance is disabled for every group. You may keep trying or voluntarily press Skip.</div>`;
+ }
+ $("app").innerHTML=`<div class="row between"><span class="pill">${current.activeDay===0?"Day 0 baseline":("Day "+current.activeDay)} · ${current.activeStage==="assisted"?(current.activeDay===0?"Baseline reasoning":"Assistance phase"):"Independent transfer"}</span><span id="timer" class="timer"></span></div>
+ <div class="progress"><div style="width:${Math.round(dayDone/dayTotal*100)}%"></div></div>
+ <p class="muted">Problem ${current.activeIndex+1} of ${set.length}</p>
+ <div class="problem">${esc(task.prompt)}</div>${tool}
+ <label for="answer"><strong>Your answer</strong></label><input id="answer" autocomplete="off" aria-describedby="answerHelp"><p id="answerHelp" class="small muted">Enter your best answer. You can try again if needed.</p>
+ <div class="actions"><button class="primary" id="submit">Submit</button>${current.activeStage==="transfer"?'<button class="danger" id="skip">Skip problem</button>':""}<button class="ghost" onclick="renderHome()">Save & exit</button></div>
+ <div id="feedback" class="feedback" aria-live="polite"></div>`;
+ const prev=current.trials[current.trials.length-1];if(!prev||prev.taskId!==task.id||prev.endedAt!==null){current.trials.push(makeTrial(task));log("task_started",{taskId:task.id})}trialStart=Date.now();
+ wireAssistance(task);
+ let timed=false;timer=setInterval(()=>{
+   const s=(Date.now()-trialStart)/1000;$("timer").textContent=`Time: ${s.toFixed(1)} s`;
+   if(current.activeStage==="transfer"&&s>=TRANSFER_LIMIT_SEC&&!timed){
+      timed=true;finishTrial("timed_out",0,0,1);$("feedback").innerHTML='<span class="muted">Time limit reached.</span>';setTimeout(nextTask,450);
+   }
+ },100);
+ $("submit").onclick=()=>submit(task);$("answer").onkeydown=e=>{if(e.key==="Enter")submit(task)};
+ if($("skip"))$("skip").onclick=()=>{finishTrial("skipped",0,1,0);log("task_skipped",{taskId:task.id});nextTask()};
+ $("answer").focus();
+}
+function wireAssistance(task){
+ const tr=activeTrial();
+ if(current.activeStage!=="assisted" || current.activeDay===0)return;
+ if(current.group===2){
+   $("searchBtn").onclick=()=>{
+     const q=norm($("searchQ").value);if(!q)return;
+     $("toolOut").innerHTML=`<div class="result"><b>${esc(task.topic)}</b><p>${esc(task.search)}</p></div>`;
+     tr.toolUses++;log("search_used",{taskId:task.id,query:q});saveCurrent();
+   };
+ }
+ if(current.group===3){
+   let hintNo=0;
+   $("hintBtn").onclick=()=>{
+     hintNo++;const hint=hintNo===1?task.hint:"Try applying the hint directly and work through the remaining arithmetic.";
+     $("toolOut").innerHTML+=`<div class="result">${esc(hint)}</div>`;
+     tr.toolUses++;log("guided_ai_used",{taskId:task.id,hintNo});saveCurrent();if(hintNo>=2)$("hintBtn").disabled=true;
+   };
+ }
+ if(current.group===4){
+   let solved=false;
+   $("solveBtn").onclick=()=>{
+     solved=true;$("toolOut").innerHTML=`<div class="result"><b>AI solution</b><p>${esc(task.solution)}</p></div>`;$("useBtn").disabled=false;
+     tr.toolUses++;log("full_ai_used",{taskId:task.id,prompt:$("aiQ").value});saveCurrent();
+   };
+   $("useBtn").onclick=()=>{if(!solved)return;$("answer").value=task.answer;log("ai_answer_inserted",{taskId:task.id})};
+ }
+}
+function submit(task){
+ const v=$("answer").value.trim();if(!v){$("feedback").innerHTML='<span class="bad">Enter an answer first.</span>';return}
+ const tr=activeTrial();if(tr.firstResponseMs===null)tr.firstResponseMs=Date.now()-trialStart;tr.attempts++;tr.finalAnswer=v;
+ const ok=answerCorrect(task,v);log("answer_submitted",{taskId:task.id,attempt:tr.attempts,correct:ok});saveCurrent();
+ if(ok){finishTrial("correct",1,0,0);$("feedback").innerHTML='<span class="ok">Answer recorded.</span>';setTimeout(nextTask,300)}
+ else{$("feedback").innerHTML='<span class="bad">Not correct. You may try again'+(current.activeStage==="transfer"?" or skip.":".")+'</span>';$("answer").select()}
+}
+function finishTrial(outcome,c,s,t){
+ stopTimer();const tr=activeTrial();tr.endedAt=Date.now();tr.outcome=outcome;tr.correct=c;tr.skipped=s;tr.timedOut=t;tr.finalAnswer=$("answer")?.value||tr.finalAnswer;saveCurrent();
+}
+async function nextTask(){
+ try{await writeQueue}catch{return}
+ current.activeIndex++;saveCurrent();
+ if(current.activeIndex>=tasksForStage().length)advanceStage();else renderTask();
+}
+function advanceStage(){
+ if(current.activeStage==="assisted"){
+   current.activeStage="transfer";current.activeIndex=0;saveCurrent();
+   $("app").innerHTML=`<span class="pill">${current.activeDay===0?"Day 0 baseline":"Day "+current.activeDay}</span><h2>${current.activeDay===0?"Baseline persistence phase":"Independent transfer phase"}</h2>
+   <div class="notice"><strong>All assistance is unavailable.</strong></div>
+   <p>${current.activeDay===0?"These problems establish your starting persistence before the intervention begins.":"These problems are new. Keep working for as long as you wish, or press Skip if you decide to stop trying."}</p>
+   <button class="primary" onclick="renderTask()">Begin ${current.activeDay===0?"baseline persistence":"transfer"} phase</button>`;
+ } else {
+   finishDay();
+ }
+}
+function finishDay(){
+ const existing=(current.days||[]).find(d=>d.day===current.activeDay);
+ if(!existing)current.days.push({day:current.activeDay,completed:true,completedAt:new Date().toISOString()});
+ else{existing.completed=true;existing.completedAt=new Date().toISOString()}
+ log("day_completed",{day:current.activeDay});
+ const finishedDay=current.activeDay;
+ current.activeStage=null;current.activeIndex=0;saveCurrent();
 
-// PARTICIPANT LOGIN — CODE ONLY
-app.post('/api/participant/login',async(req,res)=>{
-  const code=safeCode(req.body.code);
-  const {rows}=await pool.query(
-    'SELECT data FROM participants WHERE code=$1',[code]
-  );
-  if(!rows.length){
-    return res.status(401).json({error:'Invalid participant code'});
-  }
-  res.json({
-    token:token('participant',code,30*86400),
-    participant:rows[0].data
-  });
-});
+ if(finishedDay===0){
+   $("app").innerHTML=`<span class="pill">Subject View</span><h1>Baseline complete</h1>
+   <p class="lead">Nice work — your baseline has been saved.</p>
+   <div class="notice">Your next session is <strong>Day 1</strong>. Group-specific assistance begins only from Day 1.</div>
+   <button class="primary" onclick="renderHome()">Finish baseline</button>`;
+ } else if(finishedDay===7){
+   current.activeDay=7;saveCurrent();renderLHS();
+ } else {
+   $("app").innerHTML=`<span class="pill">Participant</span><h1>Day ${finishedDay} complete ✓</h1><p class="lead">Great job. Your responses have been saved.</p>
+   <div class="notice">Return for <strong>Day ${finishedDay+1}</strong> using the same participant code.</div><button class="primary" onclick="renderHome()">Finish for today</button>`;
+ }
+}
 
-// RESEARCHER PARTICIPANT LIST
-app.get('/api/participants',auth,admin,async(req,res)=>{
-  const {rows}=await pool.query(
-    'SELECT data FROM participants ORDER BY created_at'
-  );
-  res.json(rows.map(r=>r.data));
-});
+function lhsScore(responses){
+ let total=0;
+ for(let i=1;i<=20;i++){
+   const choice=responses[i]; // SA/A/D/SD
+   if(LHS_DIRECT.includes(i))total += {SA:4,A:3,D:2,SD:1}[choice];
+   else total += {SA:1,A:2,D:3,SD:4}[choice];
+ }
+ return total;
+}
+function renderLHS(){
+ stopTimer();
+ $("app").innerHTML=`<span class="pill">Day 7 · Final self-report</span><h1>Learned Helplessness Scale — Form B</h1>
+ <p>Please place a check in the option that most closely describes you or your feelings about yourself.</p>
+ <div class="notice small">Answer every item. This questionnaire is shown only after completing Day 7.</div>
+ <div id="lhsItems">${LHS_ITEMS.map((it,i)=>`<div class="lhs-item"><b>${i+1}.</b> ${esc(it)}<div class="lhs-options">
+  <label><input type="radio" name="lhs${i+1}" value="SA">Strongly Agree</label>
+  <label><input type="radio" name="lhs${i+1}" value="A">Agree</label>
+  <label><input type="radio" name="lhs${i+1}" value="D">Disagree</label>
+  <label><input type="radio" name="lhs${i+1}" value="SD">Strongly Disagree</label>
+ </div></div>`).join("")}</div>
+ <div class="actions"><button class="primary" onclick="submitLHS()">Submit final questionnaire</button></div><div id="lhsMsg" class="feedback"></div>`;
+}
+function submitLHS(){
+ const responses={};
+ for(let i=1;i<=20;i++){
+   const x=document.querySelector(`input[name="lhs${i}"]:checked`);
+   if(!x){$("lhsMsg").innerHTML=`<span class="bad">Please answer item ${i}.</span>`;return}
+   responses[i]=x.value;
+ }
+ const total=lhsScore(responses);
+ current.lhs={responses,total,completedAt:new Date().toISOString()};
+ log("lhs_completed",{total});saveCurrent();renderSubjectComplete();
+}
+function renderSubjectComplete(){
+ stopTimer();
+ $("app").innerHTML=`<span class="pill">Study complete</span><h1>Thank you — you finished the study ✓</h1>
+ <p class="lead">You completed the baseline, all seven study days, and the final questionnaire.</p>
+ <div class="notice"><strong>Replace this area with your ethics-approved debrief before real data collection.</strong></div>
+ <p class="small muted">Participant code: ${esc(current?.code||"")}</p><button class="primary" onclick="renderHome()">Return home</button>`;
+}
 
-// CREATE PARTICIPANT — NO PIN
-app.post('/api/participants',auth,admin,async(req,res)=>{
-  const code=safeCode(req.body.code);
-  const group=Number(req.body.group);
+function exportProfiles(){
+ const rows=getPs().filter(p=>p.profile).map(p=>({
+   participant:p.code,group:p.group,age:p.profile.age,university_year:p.profile.year,major:p.profile.major,gpa:p.profile.gpa,
+   ai_use_frequency:p.profile.aiFrequency,ai_hours_per_week:p.profile.aiHours,ai_problem_solving:p.profile.aiProblemSolving,
+   ai_when_stuck:p.profile.aiWhenStuck,ai_tools:(p.profile.aiTools||[]).join("; ")
+ }));
+ const h=Object.keys(rows[0]||{participant:"",group:"",age:"",university_year:"",major:"",gpa:"",ai_use_frequency:""});
+ dl("participant_background.csv",[h.map(csv).join(","),...rows.map(r=>h.map(k=>csv(r[k])).join(","))].join("\\n"),"text/csv");
+}
 
-  if(!/^[A-Z0-9_-]{2,32}$/.test(code)||
-     ![1,2,3,4].includes(group)){
-    return res.status(400).json({error:'Invalid code or group'});
-  }
+function exportTrials(){
+ const rows=[];getPs().forEach(p=>(p.trials||[]).forEach(t=>rows.push({
+   participant:p.code,group:p.group,day:t.day,stage:t.stage,task_id:t.taskId,
+   duration_seconds:t.endedAt?((t.endedAt-t.startedAt)/1000).toFixed(3):"",
+   first_response_ms:t.firstResponseMs??"",attempts:t.attempts,outcome:t.outcome??"",
+   correct:t.correct,skipped:t.skipped,timed_out:t.timedOut,tool_uses:t.toolUses,final_answer:t.finalAnswer
+ })));
+ const h=Object.keys(rows[0]||{participant:"",group:"",day:"",stage:"",task_id:"",duration_seconds:""});
+ dl("day0_plus_7day_trials.csv",[h.map(csv).join(","),...rows.map(r=>h.map(k=>csv(r[k])).join(","))].join("\n"),"text/csv");
+}
+function exportLHS(){
+ const rows=getPs().filter(p=>p.lhs).map(p=>{
+   const r={participant:p.code,group:p.group,lhs_total:p.lhs.total};
+   for(let i=1;i<=20;i++)r["lhs_"+i]=p.lhs.responses[i];
+   return r;
+ });
+ const h=Object.keys(rows[0]||{participant:"",group:"",lhs_total:""});
+ dl("LHS_results.csv",[h.map(csv).join(","),...rows.map(r=>h.map(k=>csv(r[k])).join(","))].join("\n"),"text/csv");
+}
+function exportJSON(){dl("day0_plus_7day_study_backup.json",JSON.stringify(getPs(),null,2),"application/json")}
+function exportOne(code){const p=getP(code);if(p)dl(code+"_study.json",JSON.stringify(p,null,2),"application/json")}
+function importJSON_DISABLED(){
+ const f=$("importFile");f.onchange=()=>{
+   const file=f.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{
+     try{const x=JSON.parse(reader.result);if(!Array.isArray(x))throw Error();savePs(x);alert("Backup imported.");renderOperator()}catch{alert("Invalid backup file.")}
+   };reader.readAsText(file);
+ };f.click();
+}
 
-  const data={
-    code,group,
-    createdAt:new Date().toISOString(),
-    profile:null,days:[],trials:[],events:[],lhs:null
-  };
-
-  try{
-    await pool.query(
-      'INSERT INTO participants(code,pin_hash,data) VALUES($1,$2,$3)',
-      [code,h(crypto.randomBytes(32).toString('hex')),data]
-    );
-    res.json({participant:data});
-  }catch(e){
-    if(e.code==='23505'){
-      return res.status(409).json({error:'Code already exists'});
-    }
-    throw e;
-  }
-});
-
-// SAVE PARTICIPANT PROGRESS
-app.put('/api/participants/:code',auth,async(req,res)=>{
-  const code=safeCode(req.params.code);
-
-  if(req.auth.role!=='admin'&&req.auth.code!==code){
-    return res.status(403).json({error:'Forbidden'});
-  }
-
-  const existing=await pool.query(
-    'SELECT data FROM participants WHERE code=$1',[code]
-  );
-
-  if(!existing.rows.length){
-    return res.status(404).json({error:'Unknown participant'});
-  }
-
-  const old=existing.rows[0].data;
-  const data=req.body;
-
-  if(!data||data.code!==code||
-     JSON.stringify(data).length>1500000){
-    return res.status(400).json({error:'Invalid participant data'});
-  }
-
-  if(req.auth.role!=='admin'&&data.group!==old.group){
-    return res.status(403).json({error:'Cannot change group'});
-  }
-
-  await pool.query(
-    'UPDATE participants SET data=$2 WHERE code=$1',
-    [code,data]
-  );
-  res.json({ok:true});
-});
-
-app.get('/api/health',(_req,res)=>res.json({ok:true}));
-
-app.use(express.static('public'));
-
-app.use((err,req,res,next)=>{
-  console.error(err);
-  res.status(500).json({error:'Server error'});
-});
-
-(async()=>{
-  await pool.query(
-    'CREATE TABLE IF NOT EXISTS participants('+
-    'code TEXT PRIMARY KEY,'+
-    'pin_hash TEXT NOT NULL,'+
-    'data JSONB NOT NULL,'+
-    'created_at TIMESTAMPTZ DEFAULT NOW())'
-  );
-
-  app.listen(
-    process.env.PORT||3000,
-    ()=>console.log('Cloud study ready')
-  );
-})().catch(e=>{
-  console.error(e);
-  process.exit(1);
-});
+renderHome();
+</script>
+</body>
+</html>
