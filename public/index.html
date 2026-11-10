@@ -139,7 +139,7 @@ function participantRow(p){
 
 async function createParticipant(){
  let code=norm($("newCode").value).toUpperCase().replace(/\s+/g,"");if(!code)code=uid();
- try{const r=await api('/participants','POST',{code,group:Number($("newGroup").value)});cloudParticipants.push(r.participant);renderOperator();alert('Participant '+code+' created!\nPRIVATE PARTICIPANT PIN: '+r.pin+'\n\nGive the code AND PIN to the participant. Save this PIN now; it is only displayed once.')}catch(e){alert(e.message)}
+ try{const r=await api('/participants','POST',{code,group:Number($("newGroup").value)});cloudParticipants.push(r.participant);renderOperator();alert('Participant '+code+' created!\n\nGive this code to the participant.')')}catch(e){alert(e.message)}
 }
 async function editGroup(code){
  const p=getP(code);if(!p)return;
