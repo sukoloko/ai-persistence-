@@ -179,14 +179,15 @@ function showParticipant(code){
 function subjectLogin(){
  $("app").innerHTML=`<span class="pill">Participant</span><h1>Enter your study code</h1>
  <p class="lead">Use the same code every time you return. Your code keeps your sessions connected without asking for your name.</p>
- <label for="subjectCode"><strong>Participant code</strong></label><input id="subjectCode" placeholder="Example: P001" autocomplete="off" aria-describedby="codeHelp"><label for="subjectPin"><strong>Private PIN (provided by researcher)</strong></label><input id="subjectPin" placeholder="Your private PIN" autocomplete="off">
+ <label for="subjectCode"><strong>Participant code</strong></label><input id="subjectCode" placeholder="Example: P001" autocomplete="off" aria-describedby="codeHelp">
+ 
  <p id="codeHelp" class="small muted">Your researcher will give you this code.</p>
  <div class="actions"><button class="primary" onclick="openSubject()">Continue</button><button class="ghost" onclick="renderHome()">Back</button></div><div id="loginMsg" class="feedback" aria-live="polite"></div>`;
  $("subjectCode").focus();
  $("subjectCode").onkeydown=e=>{if(e.key==="Enter")openSubject()};
 }
 async function openSubject(){
- try{const r=await api('/participant/login','POST',{code:$("subjectCode").value,pin:$("subjectPin").value});authToken=r.token;authRole='participant';cloudParticipants=[r.participant];current=r.participant;if(!current.profile){renderProfile();return}continueToNextSession()}catch(e){$("loginMsg").textContent=e.message}
+ try{const r=await api('/participant/login','POST',{code:$("subjectCode").value});authToken=r.token;authRole='participant';cloudParticipants=[r.participant];current=r.participant;if(!current.profile){renderProfile();return}continueToNextSession()}catch(e){$("loginMsg").textContent=e.message}
 }
 function renderProfile(){
  stopTimer();
