@@ -43,7 +43,8 @@ app.post('/api/participants',auth,admin,async(req,res)=>{
       return res.status(409).json({error:'Code already exists'});
     throw e;
   }
-});{const code=safeCode(req.body.code),group=Number(req.body.group);if(!/^[A-Z0-9_-]{2,32}$/.test(code)||![1,2,3,4].includes(group))return res.status(400).json({error:'Invalid code or group'});const pin=crypto.randomBytes(6).toString('hex').toUpperCase();const data={code,group,createdAt:new Date().toISOString(),profile:null,days:[],trials:[],events:[],lhs:null};try{await pool.query('INSERT INTO participants(code,pin_hash,data) VALUES($1,$2,$3)',[code,h(pin),data]);res.json({participant:data,pin})}catch(e){if(e.code==='23505')return res.status(409).json({error:'Code already exists'});throw e}});
+});
+
 app.put('/api/participants/:code',auth,async(req,res)=>{const code=safeCode(req.params.code);if(req.auth.role!=='admin'&&req.auth.code!==code)return res.status(403).json({error:'Forbidden'});const existing=await pool.query('SELECT data FROM participants WHERE code=$1',[code]);if(!existing.rows.length)return res.status(404).json({error:'Unknown participant'});const old=existing.rows[0].data, data=req.body;if(!data||data.code!==code||JSON.stringify(data).length>1500000)return res.status(400).json({error:'Invalid participant data'});if(req.auth.role!=='admin'&&data.group!==old.group)return res.status(403).json({error:'Cannot change group'});await pool.query('UPDATE participants SET data=$2 WHERE code=$1',[code,data]);res.json({ok:true})});
 app.get('/api/health',(_req,res)=>res.json({ok:true}));
 app.use(express.static('public'));
